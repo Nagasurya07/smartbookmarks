@@ -30,6 +30,13 @@ export function AddBookmarkModal({
     setIsLoading(true)
 
     try {
+      // Normalize URL: ensure protocol present and encode to preserve special chars
+      let finalUrl = url.trim()
+      if (finalUrl && !/^https?:\/\//i.test(finalUrl)) {
+        finalUrl = `https://${finalUrl}`
+      }
+      finalUrl = encodeURI(finalUrl)
+
       const response = await fetch('/api/bookmarks', {
         method: 'POST',
         headers: {
@@ -37,7 +44,7 @@ export function AddBookmarkModal({
         },
         body: JSON.stringify({
           title,
-          url,
+          url: finalUrl,
           category,
         }),
       })
