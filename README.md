@@ -1,218 +1,334 @@
-# Smart Bookmarks
+# Smart Bookmarks - Bookmark Manager with Google OAuth
 
-## Overview
-Smart Bookmarks is a modern web application built with Next.js 16 and Supabase for managing bookmarks with Google Sign-In authentication.
+A modern bookmark management application built with Next.js 16, Supabase, and TypeScript. Manage your bookmarks with Google Sign-In and organize them by categories.
 
-## Project Stack
-- **Frontend**: Next.js 16 (React)
-- **Backend**: Supabase (PostgreSQL)
-- **Authentication**: Google OAuth via Supabase Auth
-- **Styling**: Tailwind CSS + shadcn/ui components
-- **Hosting**: Vercel
+## Features
+
+- **Google OAuth Authentication** - Sign in securely with your Google account
+- **Bookmark Management** - Add, edit, delete, and organize bookmarks
+- **Category Organization** - Organize bookmarks by categories
+- **Search Functionality** - Search bookmarks by title or URL
+- **Favorites System** - Mark bookmarks as favorites
+- **Real-time Updates** - Live updates using Supabase Realtime
+- **Responsive Design** - Works on desktop and mobile devices
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes with Server Components
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth with Google OAuth
+- **Deployment**: Vercel
 
 ## Prerequisites
-Before deploying, you need:
-1. A GitHub repository (already set up at `github.com/Nagasurya07/smartbookmarks`)
-2. A Vercel account (https://vercel.com)
-3. A Supabase project (https://supabase.com)
-4. Google OAuth credentials from Google Cloud Console
 
-## Step 1: Set Up Supabase
+Before you begin, make sure you have:
 
-1. Go to https://supabase.com and create a new project
-2. Note your project credentials:
-   - **Project URL** (e.g., `https://xxxxx.supabase.co`)
-   - **Public Anon Key**
-   - **Service Role Key** (for backend operations)
+1. A [Supabase account](https://supabase.com)
+2. A [Google Cloud project](https://console.cloud.google.com) with OAuth credentials
+3. A [Vercel account](https://vercel.com) for deployment
+4. Node.js 18+ and npm/pnpm installed locally
 
-3. Create the required database tables:
-   ```sql
-   -- Create bookmarks table
-   CREATE TABLE bookmarks (
-     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-     title TEXT NOT NULL,
-     url TEXT NOT NULL,
-     description TEXT,
-     category TEXT,
-     created_at TIMESTAMP DEFAULT NOW(),
-     updated_at TIMESTAMP DEFAULT NOW()
-   );
+## Quick Start - Local Development
 
-   -- Enable RLS
-   ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+### 1. Clone and Install
 
-   -- Create policy for users to view their own bookmarks
-   CREATE POLICY "Users can view their own bookmarks" ON bookmarks
-     FOR SELECT USING (auth.uid() = user_id);
+```bash
+git clone https://github.com/Nagasurya07/smartbookmarks.git
+cd smartbookmarks
+npm install
+```
 
-   -- Create policy for users to insert their own bookmarks
-   CREATE POLICY "Users can create their own bookmarks" ON bookmarks
-     FOR INSERT WITH CHECK (auth.uid() = user_id);
+### 2. Set Up Supabase
 
-   -- Create policy for users to update their own bookmarks
-   CREATE POLICY "Users can update their own bookmarks" ON bookmarks
-     FOR UPDATE USING (auth.uid() = user_id);
+1. Create a new Supabase project at https://app.supabase.com
+2. Go to SQL Editor and run this script:
 
-   -- Create policy for users to delete their own bookmarks
-   CREATE POLICY "Users can delete their own bookmarks" ON bookmarks
-     FOR DELETE USING (auth.uid() = user_id);
-   ```
+```sql
+-- Create bookmarks table
+CREATE TABLE bookmarks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  url TEXT NOT NULL,
+  category TEXT DEFAULT 'General',
+  is_favorite BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-## Step 2: Configure Google OAuth
+-- Create indexes
+CREATE INDEX bookmarks_user_id_idx ON bookmarks(user_id);
+CREATE INDEX bookmarks_category_idx ON bookmarks(category);
+
+-- Enable Row Level Security
+ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view their own bookmarks"
+  ON bookmarks FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own bookmarks"
+  ON bookmarks FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own bookmarks"
+  ON bookmarks FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own bookmarks"
+  ON bookmarks FOR DELETE
+  USING (auth.uid() = user_id);
+```
+
+### 3. Configure Google OAuth
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project
-3. Enable the Google+ API
-4. Create OAuth 2.0 credentials (OAuth Consent Screen → Create Credentials)
-5. Add authorized redirect URI: `https://[your-project].supabase.co/auth/v1/callback?provider=google`
-6. Copy your **Client ID** and **Client Secret**
-7. In Supabase, go to Authentication → Providers → Google
-8. Enable Google and paste the Client ID and Client Secret
+2. Create OAuth 2.0 credentials:
+   - Click "Create Credentials" → "OAuth client ID" → "Web application"
+   - Add authorized redirect URIs:
+     - Local: `http://localhost:3000/auth/callback`
+     - Production: `https://YOUR_VERCEL_DOMAIN/auth/callback`
+3. Copy **Client ID** and **Client Secret**
+4. In Supabase Dashboard → Authentication → Providers → Google:
+   - Enable "Enable Sign in with Google"
+   - Paste Client ID and Client Secret
+   - Save
 
-## Step 3: Deploy to Vercel
+### 4. Environment Variables
 
-### Option A: Using Vercel Dashboard (Recommended)
+Create `.env.local`:
 
-1. Go to https://vercel.com and sign in
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Get these from: Supabase Dashboard → Project Settings → API
+
+### 5. Run Locally
+
+```bash
+npm run dev
+# Visit http://localhost:3000
+```
+
+## Deployment to Vercel
+
+### Step 1: Push to GitHub
+
+```bash
+git add .
+git commit -m "Deploy to Vercel"
+git push origin main
+```
+
+### Step 2: Deploy
+
+1. Go to https://vercel.com/dashboard
 2. Click "Add New..." → "Project"
-3. Import the GitHub repository `Nagasurya07/smartbookmarks`
-4. Configure the project:
-   - **Framework**: Next.js
-   - **Root Directory**: `./` (default)
-   - **Environment Variables**: Add the following:
+3. Select your GitHub repository (`Nagasurya07/smartbookmarks`)
+4. Configure:
+   - Framework: **Next.js** (auto-detected)
+   - Add environment variables:
      ```
-     NEXT_PUBLIC_SUPABASE_URL=https://[your-project].supabase.co
-     NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-public-anon-key]
+     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
      ```
-
 5. Click "Deploy"
 
-### Option B: Using Vercel CLI
+Vercel will provide your live URL, e.g., `https://smartbookmarks-xyz.vercel.app`
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+### Step 3: Update Google OAuth
 
-# Login to Vercel
-vercel login
+**IMPORTANT** - After deployment, update Google OAuth settings:
 
-# Deploy the project
-vercel --prod
-```
+1. In Google Cloud Console:
+   - Edit your OAuth Client ID
+   - Add redirect URI: `https://YOUR_VERCEL_DOMAIN/auth/callback`
+   - Save
 
-## Step 4: Environment Variables
+2. Verify Supabase has your new domain in Google provider settings
 
-Make sure these environment variables are set in Vercel:
+### Step 4: Test
 
-| Variable | Value | Required |
-|----------|-------|----------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL | Yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key | Yes |
+1. Visit your Vercel URL
+2. Click "Continue with Google"
+3. After login, you should be redirected to `/dashboard`
+4. Test creating a bookmark
 
-**Note**: The `NEXT_PUBLIC_` prefix makes these variables accessible in the browser. Keep the keys public as they're meant to be client-side safe.
+## API Endpoints
 
-## Step 5: Verify Deployment
+All endpoints require authentication (Supabase session).
 
-1. After deployment completes, Vercel will show your live URL
-2. Visit the URL and you should see the login page
-3. Click "Continue with Google" and complete the authentication flow
-4. You should be redirected to the dashboard
+### Authentication
 
-## Local Development
+- `GET /api/auth/user` - Get current user information
+- `POST /api/auth/signout` - Sign out the user
+- `GET /api/debug/session` - Debug current session (shows cookies, user, session state)
 
-To run the app locally:
+### Bookmarks
 
-```bash
-# Install dependencies
-npm install
-
-# Create .env.local file with your Supabase credentials
-cat > .env.local << EOF
-NEXT_PUBLIC_SUPABASE_URL=https://[your-project].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-public-anon-key]
-EOF
-
-# Run development server
-npm run dev
-
-# Open http://localhost:3000 in your browser
-```
+- `GET /api/bookmarks` - Get all user bookmarks
+- `POST /api/bookmarks` - Create new bookmark
+- `PATCH /api/bookmarks` - Update bookmark (e.g., toggle favorite)
+- `DELETE /api/bookmarks` - Delete bookmark
 
 ## Project Structure
 
 ```
-smart-bookmarks/
+smartbookmarks/
 ├── app/
+│   ├── api/
+│   │   ├── auth/user/route.ts      # Get current user
+│   │   ├── auth/signout/route.ts   # Sign out
+│   │   ├── bookmarks/route.ts      # Bookmark CRUD
+│   │   └── debug/session/route.ts  # Debug endpoint
 │   ├── auth/
-│   │   ├── login/              # Login page with Google OAuth
-│   │   └── callback/           # OAuth callback handler
-│   ├── dashboard/              # Main application pages
-│   ├── api/                    # API routes
-│   ├── layout.tsx              # Root layout
-│   └── globals.css             # Global styles
+│   │   ├── callback/route.ts       # OAuth callback
+│   │   ├── login/page.tsx          # Login page
+│   │   └── login/login-content.tsx # Login form
+│   ├── dashboard/page.tsx          # Main dashboard
+│   ├── layout.tsx                  # Root layout
+│   └── globals.css                 # Styles
 ├── components/
-│   ├── ui/                     # shadcn/ui components
-│   └── [app-components]/       # Application-specific components
-├── lib/
-│   └── supabase/
-│       ├── client.ts           # Supabase client for browser
-│       └── server.ts           # Supabase client for server
-├── public/                     # Static assets
-├── package.json                # Dependencies
-├── next.config.mjs             # Next.js configuration
-└── tailwind.config.ts          # Tailwind CSS configuration
+│   ├── ui/                         # shadcn/ui components
+│   ├── add-bookmark-modal.tsx      # Add bookmark modal
+│   └── bookmark-card.tsx           # Bookmark card
+├── lib/supabase/
+│   ├── client.ts                   # Browser client
+│   ├── server.ts                   # Server client
+│   └── proxy.ts                    # Proxy config
+├── middleware.ts                   # Session management
+├── next.config.mjs                 # Next.js config
+└── package.json
 ```
+
+## Key Files Explained
+
+- **`middleware.ts`** - Handles session authentication across all routes
+- **`app/auth/callback/route.ts`** - Processes OAuth callback, exchanges code for session, redirects to dashboard
+- **`app/dashboard/page.tsx`** - Main app, checks user auth and displays bookmarks
+- **`lib/supabase/server.ts`** - Server-side Supabase client with cookie handling
+- **`lib/supabase/client.ts`** - Client-side Supabase client for browser
 
 ## Troubleshooting
 
-### Issue: "NEXT_PUBLIC_SUPABASE_URL is not set"
-**Solution**: Make sure you've added the environment variables to Vercel project settings.
+### Login doesn't redirect to dashboard
 
-### Issue: Google OAuth fails
-**Solution**: 
-- Verify the redirect URI in Google Cloud Console matches your Vercel domain
-- Check that Google provider is enabled in Supabase
-- Ensure Client ID and Secret are correct in Supabase
+**Check 1: Browser Console**
+- Open DevTools (F12) → Console tab
+- Look for errors starting with `[v0]`
 
-### Issue: Build fails with Turbopack error
-**Solution**: The next.config.mjs has `experimental: { turbo: false }` to disable Turbopack. This is intentional.
+**Check 2: Session Debug**
+- Visit: `https://YOUR_DOMAIN/api/debug/session`
+- This shows if user session exists and which cookies are set
 
-### Issue: RLS policy errors
-**Solution**: Make sure all database tables have proper RLS policies enabled. Users can only access their own data.
+**Check 3: Environment Variables**
+- Go to Vercel Dashboard → Settings → Environment Variables
+- Verify both variables are set correctly:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-## Performance Tips
+**Check 4: Google OAuth Configuration**
+- Verify redirect URI in Google Cloud Console matches your Vercel domain
+- In Supabase → Auth → Providers → Google, verify credentials are saved
+- Test with: `https://YOUR_DOMAIN/auth/callback`
 
-1. **Caching**: The app uses SWR for client-side data fetching with automatic caching
-2. **Images**: All images are optimized using Next.js Image component
-3. **Code Splitting**: Components are code-split automatically by Next.js
+### "This site can't be reached" error
 
-## Security Considerations
+**Cause**: OAuth callback URL not registered
 
-1. **Never commit `.env.local`** - Use Vercel's environment variable settings
-2. **Row Level Security (RLS)** - Enabled on all user data tables in Supabase
-3. **OAuth Tokens** - Handled securely by Supabase
-4. **CORS** - Configured for your Vercel domain
+**Solution**:
+1. Add your Vercel domain to Google Cloud Console OAuth redirect URIs
+2. Add same domain to Supabase Google provider if needed
+3. Clear browser cookies and try again
+
+### "Unauthorized" error on dashboard
+
+**Solution**:
+1. Check `/api/debug/session` - should show a user
+2. Clear cookies (DevTools → Application → Cookies → Delete all)
+3. Try logging in again
+4. Check Vercel logs for server errors
+
+### Can't see user name on dashboard
+
+**Cause**: Incorrect user metadata field
+
+**Solution**: The app looks for name in:
+1. `user_metadata.name` (from Google)
+2. `email` prefix
+3. Falls back to "User"
+
+This is set in `app/dashboard/page.tsx` in `fetchUserData`
+
+## Environment Variables Guide
+
+| Variable | Required | Where to Get |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase Dashboard → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase Dashboard → Settings → API → anon key |
+
+**Important**: Variables with `NEXT_PUBLIC_` prefix are exposed to browser (this is safe).
+
+## Debug Commands
+
+### Check Session via API
+```bash
+curl https://YOUR_DOMAIN/api/debug/session
+```
+
+### Check User Info
+```bash
+curl https://YOUR_DOMAIN/api/auth/user
+```
+
+### View Vercel Logs
+Visit: https://vercel.com/dashboard → Select project → Deployments → Select deployment → Logs
+
+### View Supabase Logs
+Go to: Supabase Dashboard → Logs
+
+## Common Issues & Fixes
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| "process.env.NEXT_PUBLIC_SUPABASE_URL is undefined" | Env vars not set | Add to Vercel project settings |
+| Login button does nothing | Supabase URL/Key wrong | Verify in env vars |
+| Redirect to login instead of dashboard | No session | Check `/api/debug/session` |
+| Google login fails | OAuth URI mismatch | Update Google Cloud Console & Supabase |
+| Build fails with TypeScript errors | Type issues | Check console logs |
+
+## Performance & Security
+
+- **Session Management**: Middleware handles auth on every request
+- **Row Level Security**: All data filtered by user_id at database level
+- **Secure Cookies**: Session cookies are HTTP-only and secure
+- **Real-time Updates**: Supabase Realtime subscriptions for live changes
+- **Code Splitting**: Automatic route-based code splitting
 
 ## Next Steps
 
-After deployment:
-1. Test the login flow with a Google account
-2. Create bookmarks and verify they're saved
-3. Monitor application logs in Vercel dashboard
-4. Set up monitoring and error tracking (optional)
+After successful deployment:
+1. Invite team members
+2. Set up custom domain (optional)
+3. Configure Supabase backups
+4. Monitor Vercel Analytics
+5. Set up error tracking (e.g., Sentry)
 
-## Support
+## Support & Resources
 
-For issues or questions:
-- Check Vercel logs: https://vercel.com/dashboard
-- Check Supabase logs: https://app.supabase.com
-- Review Next.js docs: https://nextjs.org
+- **Vercel Logs**: https://vercel.com/dashboard
+- **Supabase Docs**: https://supabase.com/docs
+- **Next.js Docs**: https://nextjs.org/docs
+- **Debug Session**: Visit `/api/debug/session` on your deployed app
 
-## Deployment Status
+## Project Info
 
-**Current Deployment**: Vercel (deploy-to-vercel branch)
-**Vercel Project ID**: prj_moVWOrkgGnXOB9EoQ3L32WKddiqw
-
-To view your deployment status and metrics, visit the Vercel dashboard.
+- **Repository**: https://github.com/Nagasurya07/smartbookmarks
+- **Vercel Project ID**: prj_moVWOrkgGnXOB9EoQ3L32WKddiqw
+- **Status**: Production Ready
 

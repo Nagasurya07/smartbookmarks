@@ -117,9 +117,14 @@ export default function DashboardPage() {
           data.user?.email?.split("@")[0] ||
           "User";
         setUserName(name);
+      } else if (response.status === 401) {
+        console.log("[v0] User not authenticated, redirecting to login");
+        router.push("/auth/login");
+      } else {
+        console.error("[v0] Error fetching user:", response.status);
       }
     } catch (error) {
-      console.error("Error fetching user:", error);
+      console.error("[v0] Error fetching user:", error);
     }
   };
 
