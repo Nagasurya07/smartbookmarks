@@ -202,6 +202,38 @@ After deployment:
 3. Monitor application logs in Vercel dashboard
 4. Set up monitoring and error tracking (optional)
 
+## Critical: Configure Google OAuth Callback URL in Supabase
+
+### After deploying to Vercel, IMPORTANT:
+1. Go to your Supabase Dashboard → Authentication → Providers → Google
+2. Update the **Authorized redirect URIs** in Supabase settings to include:
+   ```
+   https://YOUR_VERCEL_DOMAIN/auth/callback
+   ```
+   Replace `YOUR_VERCEL_DOMAIN` with your actual Vercel URL (e.g., `https://smartbookmarks-xyz.vercel.app`)
+
+3. Also add this same URL to your Google Cloud Console OAuth credentials:
+   - Go to Google Cloud Console → APIs & Services → Credentials
+   - Edit your OAuth 2.0 Client ID
+   - Add the Vercel callback URL to "Authorized redirect URIs"
+
+### Why this matters:
+The OAuth flow requires the callback URL to be explicitly allowed by both Supabase and Google. Without this configuration, users will see errors or be redirected to the wrong page after login.
+
+## Troubleshooting OAuth Issues
+
+### Issue: Login doesn't redirect to dashboard
+**Check**:
+1. Verify the callback URL is registered in both Supabase and Google Cloud Console
+2. Open browser DevTools (F12) and check Console for errors
+3. Check that `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in Vercel
+
+### Issue: "This site can't be reached" error after login
+**Solution**:
+- The callback URL is not registered in Supabase
+- Update your Supabase Google provider settings with your production Vercel URL
+- For local development, use `http://localhost:3000/auth/callback` in Supabase settings
+
 ## Support
 
 For issues or questions:

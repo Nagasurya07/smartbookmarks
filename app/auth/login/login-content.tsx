@@ -25,15 +25,20 @@ export default function LoginContent() {
     setError(null)
 
     try {
+      const redirectUrl = `${window.location.origin}/auth/callback`
+      console.log('[v0] Initiating Google sign in with redirect URL:', redirectUrl)
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: redirectUrl,
         },
       })
       if (error) throw error
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred'
+      console.error('[v0] Google sign in error:', errorMessage)
+      setError(errorMessage)
       setIsLoading(false)
     }
   }
