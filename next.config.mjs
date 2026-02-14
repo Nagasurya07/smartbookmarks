@@ -3,8 +3,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  turbopack: {
-    root: "e:/12",
+  experimental: {
+    turbo: false,
   },
 };
 
