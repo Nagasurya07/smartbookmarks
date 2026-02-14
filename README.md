@@ -1,4 +1,4 @@
-# Smart Bookmarks - Deployment Guide
+# Smart Bookmarks
 
 ## Overview
 Smart Bookmarks is a modern web application built with Next.js 16 and Supabase for managing bookmarks with Google Sign-In authentication.
@@ -215,3 +215,4 @@ For issues or questions:
 **Vercel Project ID**: prj_moVWOrkgGnXOB9EoQ3L32WKddiqw
 
 To view your deployment status and metrics, visit the Vercel dashboard.
+
